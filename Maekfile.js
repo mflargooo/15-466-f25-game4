@@ -27,7 +27,7 @@ if (maek.OS === "windows") {
 	maek.options.CPPFlags.push(
 		`/O2`, //optimize
 		//include paths for nest libraries:
-		`/I${NEST_LIBS}/SDL2/include`,
+		`/I${NEST_LIBS}/SDL3/include`,
 		`/I${NEST_LIBS}/glm/include`,
 		`/I${NEST_LIBS}/libpng/include`,
 		`/I${NEST_LIBS}/opusfile/include`,
@@ -43,7 +43,7 @@ if (maek.OS === "windows") {
 		`/wd4611`  //interaction between setjmp and C++ object destruction
 	);
 	maek.options.LINKLibs.push(
-		`/LIBPATH:${NEST_LIBS}/SDL2/lib`, `SDL2main.lib`, `SDL2.lib`, `OpenGL32.lib`, `Shell32.lib`,
+		`/LIBPATH:${NEST_LIBS}/SDL3/lib`, `SDL3.lib`, `OpenGL32.lib`, `Shell32.lib`,
 		`/LIBPATH:${NEST_LIBS}/libpng/lib`, `libpng.lib`,
 		`/LIBPATH:${NEST_LIBS}/zlib/lib`, `zlib.lib`,
 		`/LIBPATH:${NEST_LIBS}/opusfile/lib`, `opusfile.lib`,
@@ -57,7 +57,7 @@ if (maek.OS === "windows") {
 	maek.options.CPPFlags.push(
 		`-O2`, //optimize
 		//include paths for nest libraries:
-		`-I${NEST_LIBS}/SDL2/include/SDL2`, `-D_THREAD_SAFE`, //the output of sdl-config --cflags
+		`-I${NEST_LIBS}/SDL3/include`, `-D_THREAD_SAFE`, //the output of sdl-config --cflags
 		`-I${NEST_LIBS}/glm/include`,
 		`-I${NEST_LIBS}/libpng/include`,
 		`-I${NEST_LIBS}/opusfile/include`,
@@ -68,7 +68,7 @@ if (maek.OS === "windows") {
 	);
 	maek.options.LINKLibs.push(
 		//linker flags for nest libraries:
-		`-L${NEST_LIBS}/SDL2/lib`, `-lSDL2`, `-lm`, `-ldl`, `-lasound`, `-lpthread`, `-lX11`, `-lXext`, `-lpthread`, `-lrt`, `-lGL`, //the output of sdl-config --static-libs
+		`-L${NEST_LIBS}/SDL3/lib`, `-lSDL3`, `-lm`, `-ldl`, `-lasound`, `-lpthread`, `-lX11`, `-lXext`, `-lpthread`, `-lrt`, `-lGL`, //the output of sdl-config --static-libs
 		`-L${NEST_LIBS}/libpng/lib`, `-lpng`,
 		`-L${NEST_LIBS}/zlib/lib`, `-lz`,
 		`-L${NEST_LIBS}/opusfile/lib`, `-lopusfile`,
@@ -81,7 +81,7 @@ if (maek.OS === "windows") {
 	maek.options.CPPFlags.push(
 		`-O2`, //optimize
 		//include paths for nest libraries:
-		`-I${NEST_LIBS}/SDL2/include/SDL2`, `-D_THREAD_SAFE`, //the output of sdl-config --cflags
+		`-I${NEST_LIBS}/SDL3/include`, `-D_THREAD_SAFE`, //the output of sdl-config --cflags
 		`-I${NEST_LIBS}/glm/include`,
 		`-I${NEST_LIBS}/libpng/include`,
 		`-I${NEST_LIBS}/opusfile/include`,
@@ -92,7 +92,25 @@ if (maek.OS === "windows") {
 	);
 	maek.options.LINKLibs.push(
 		//linker flags for nest libraries:
-		`-L${NEST_LIBS}/SDL2/lib`, `-lSDL2`, `-lm`,`-liconv`, `-framework`, `CoreAudio`, `-framework`, `AudioToolbox`, `-weak_framework`, `CoreHaptics`, `-weak_framework`, `GameController`, `-framework`, `ForceFeedback`, `-lobjc`, `-framework`, `CoreVideo`, `-framework`, `Cocoa`, `-framework`, `Carbon`, `-framework`, `IOKit`, `-framework`, `OpenGL`, //the output of sdl-config --static-libs
+		`-L${NEST_LIBS}/SDL3/lib`,  `-lSDL3`,
+		`-framework`, `OpenGL`,
+ 		`-Wl,-framework,CoreMedia`,
+		`-Wl,-framework,CoreVideo`,
+		`-Wl,-framework,Cocoa`,
+		`-Wl,-weak_framework,UniformTypeIdentifiers`,
+		`-Wl,-framework,IOKit`,
+		`-Wl,-framework,ForceFeedback`,
+		`-Wl,-framework,Carbon`,
+		`-Wl,-framework,CoreAudio`,
+		`-Wl,-framework,AudioToolbox`,
+		`-Wl,-framework,AVFoundation`,
+		`-Wl,-framework,Foundation`,
+		`-Wl,-framework,GameController`,
+		`-Wl,-framework,Metal`,
+		`-Wl,-framework,QuartzCore`,
+		`-Wl,-weak_framework,CoreHaptics`,
+		`-lpthread`,
+		`-lm`,
 		`-L${NEST_LIBS}/libpng/lib`, `-lpng`,
 		`-L${NEST_LIBS}/zlib/lib`, `-lz`,
 		`-L${NEST_LIBS}/opusfile/lib`, `-lopusfile`,
@@ -107,7 +125,7 @@ if (maek.OS === "windows") {
 // from: file to copy from
 // to: file to copy to
 let copies = [
-	maek.COPY(`${NEST_LIBS}/SDL2/dist/README-SDL.txt`, `dist/README-SDL.txt`),
+	maek.COPY(`${NEST_LIBS}/SDL3/dist/README-SDL.md`, `dist/README-SDL.md`),
 	maek.COPY(`${NEST_LIBS}/libpng/dist/README-libpng.txt`, `dist/README-libpng.txt`),
 	maek.COPY(`${NEST_LIBS}/glm/dist/README-glm.txt`, `dist/README-glm.txt`),
 	maek.COPY(`${NEST_LIBS}/libopus/dist/README-libopus.txt`, `dist/README-libopus.txt`),
@@ -117,7 +135,7 @@ let copies = [
 	maek.COPY(`${NEST_LIBS}/freetype/dist/README-freetype.txt`, `dist/README-freetype.txt`)
 ];
 if (maek.OS === 'windows') {
-	copies.push( maek.COPY(`${NEST_LIBS}/SDL2/dist/SDL2.dll`, `dist/SDL2.dll`) );
+	copies.push( maek.COPY(`${NEST_LIBS}/SDL3/dist/SDL3.dll`, `dist/SDL3.dll`) );
 }
 
 //call rules on the maek object to specify tasks.
