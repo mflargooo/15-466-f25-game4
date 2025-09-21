@@ -9,6 +9,7 @@
 #include <iostream>
 #include <glm/glm.hpp>
 #include <set>
+#include <format>
 
 // from the harfbuzz and freetype examples, partitioned into respective functions
 // to reduce recomputation
@@ -47,6 +48,14 @@ FontRast::FontRast(const char *fontfile, unsigned int pixel_height) {
 
     program = screen_space_color_texture_program->program;
     GL_ERRORS();
+}
+
+void FontRast::set_line_spacing(const float spacing) {
+    line_spacing = spacing;
+}
+
+void FontRast::set_drawable_size(glm::uvec2 const &drawable_size) {
+    screen_size = drawable_size;
 }
 
 // gl subimage method for font texture management inspired by 
@@ -126,50 +135,33 @@ void FontRast::register_alphabet_to_texture(const char *alphabet, int len, GLsiz
 
 GlyphTexInfo FontRast::lookup(const unsigned char chr) {
     if (lookup_tex.find(chr) == lookup_tex.end()) {
-        throw std::runtime_error("Character has not been registered to the texture.");
+        std::cout << std::format("Character {} has not been registered to the texture.", chr) << std::endl;
     }
 
     return lookup_tex[chr];
 }
 
-// len = -1 if string is null terminated;
-void FontRast::raster_text(const char *str, int len, glm::u8vec3 color, glm::vec2 at) {
-    hb_buffer_add_utf8(buf, str, len, 0, -1);
-	hb_buffer_guess_segment_properties(buf);
-	hb_shape(font, buf, NULL, 0);
+void FontRast::raster_word(const char *word, size_t len, hb_glyph_position_t *pos, glm::vec2 &at, float left_margin) {
+    float at_x = (float) at.x;
+    float at_y = (float) at.y;
 
-	unsigned int num_glyphs = hb_buffer_get_length(buf);
+    // get total word width
+    float width = 0;
+    for (size_t i = 0; i < len; i++) {
+        width += (float)(pos[i].x_advance) / 64.f; 
+    }
 
-	struct Viewport {
-		GLint x;
-		GLint y;
-		GLint width;
-		GLint height;
-	} data;
-	glGetIntegerv(GL_VIEWPORT, (GLint *)&data);
-	// viewport 0, 0 is bottom-left -> top-left
-	glm::mat4 Ortho = glm::ortho((float)data.x, (float)(data.x + data.width), (float)data.y, (float)(data.y + data.height),  -1.f, 1.f);
+    // text will always have same margin as at.x (pen start x)
+    if (width + at_x >= (float)screen_size.x - left_margin) {
+        at_x = left_margin;
+        at_y += (float)(ft_face->height) / 64.f * line_spacing;
+    }
 
-	hb_glyph_position_t *pos = hb_buffer_get_glyph_positions(buf, NULL);
-	
-    glUseProgram(program);
-	
-    glUniformMatrix4fv(glGetUniformLocation(program, "Ortho"), 1, GL_FALSE, glm::value_ptr(Ortho));
-    glUniform3f(glGetUniformLocation(program, "Color"), (float)color.x / 255.f, (float)color.y / 255.f, (float)color.z / 255.f);
+    for (size_t i = 0; i < len; i++) {        
+        GlyphTexInfo glyph = lookup(word[i]);
 
-    glBindVertexArray(vao);
-
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, texture);
-
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    
-    for (unsigned int i = 0; i < num_glyphs; i++) {
-        GlyphTexInfo glyph = lookup(str[i]);
-
-        float pen_x = at.x + pos[i].x_offset + glyph.left;
-        float pen_y = at.y - pos[i].y_offset - glyph.top;
+        float pen_x = at_x + (float)(pos[i].x_offset / 64.f) + (float)glyph.left;
+        float pen_y = at_y - (float)(pos[i].y_offset / 64) - (float)glyph.top;
 
         Vertex vertices[6];
 
@@ -199,11 +191,64 @@ void FontRast::raster_text(const char *str, int len, glm::u8vec3 color, glm::vec
 
         glDrawArrays(GL_TRIANGLES, 0, 6);
 
-        at.x += glyph.advance.x / 64;
-        at.y += glyph.advance.y / 64;
+        at_x += pos[i].x_advance / 64;
+        at_y += pos[i].y_advance / 64;
         GL_ERRORS();
     }
 
+    at.x = at_x;
+    at.y = at_y;
+}
+
+void FontRast::raster_text(const char *str, size_t len, glm::u8vec3 color, glm::vec2 &at) {
+    hb_buffer_add_utf8(buf, str, (int)len, 0, -1);
+	hb_buffer_guess_segment_properties(buf);
+	hb_shape(font, buf, NULL, 0);
+
+	// viewport 0, 0 is bottom-left -> top-left
+	glm::mat4 projection = glm::ortho(0.f, (float)screen_size.x, (float)screen_size.y, 0.f,  -1.f, 1.f);
+
+    hb_glyph_info_t *info = hb_buffer_get_glyph_infos(buf, NULL);
+	hb_glyph_position_t *pos = hb_buffer_get_glyph_positions(buf, NULL);
+	
+    glUseProgram(program);
+	
+    glUniformMatrix4fv(glGetUniformLocation(program, "Ortho"), 1, GL_FALSE, glm::value_ptr(projection));
+    glUniform3f(glGetUniformLocation(program, "Color"), (float)color.x / 255.f, (float)color.y / 255.f, (float)color.z / 255.f);
+
+    glBindVertexArray(vao);
+
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, texture);
+
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+    glm::vec2 local_at = at;
+    size_t i = 0, j = 0;
+    while(i < len) {
+        if (str[i] == '\n') {
+            local_at.x = (float)at.x;
+            local_at.y += (float)(ft_face->height / 64.f * line_spacing * 1.2f); // line height by freetype
+            i++;
+            continue;
+        } 
+        else if (info[i].codepoint == 0 || str[i] == ' ') {
+            local_at.x += (float)(pos[i].x_advance / 64.f);
+            local_at.y += (float)(pos[i].y_advance / 64.f);
+            i++;
+            continue;
+        }
+
+        // process nonempty glyph
+        j = i;
+        while(j < len && info[j].codepoint != 0 && str[j] != ' ') {
+            j++;
+        }
+
+        raster_word(&str[i], j - i, &pos[i], local_at, at.x);
+        i = j;
+    }
 
     glDisable(GL_BLEND);
 

@@ -66,17 +66,9 @@ PlayMode::PlayMode() : scene(*test_scene) {
 	if (scene.cameras.size() != 1) throw std::runtime_error("Expecting scene to have exactly one camera, but it has " + std::to_string(scene.cameras.size()));
 	camera = &scene.cameras.front();
 
-	font_rasterizers.try_emplace("willy", "fonts/windsol.ttf", 128);
+	font_rasterizers.try_emplace("willy", "fonts/windsol.ttf", 32);
 	assert(font_rasterizers.size() == 1);
-	font_rasterizers.at("willy").register_alphabet_to_texture("abcdefghijklmnop", 16, 512);
-	
-	for (auto &drawable : scene.drawables) {
-		drawable.pipeline.textures[0].texture = font_rasterizers.at("willy").texture;
-		drawable.pipeline.textures[1].texture = font_rasterizers.at("willy").texture;
-		drawable.pipeline.textures[2].texture = font_rasterizers.at("willy").texture;
-		drawable.pipeline.textures[3].texture = font_rasterizers.at("willy").texture;
-	}
-	//font_rasterizers.at("willy").raster_text("hello capybara", -1, glm::vec2(0.0f));
+	font_rasterizers.at("willy").register_alphabet_to_texture(" \n.!?'-abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ", 53, 1024);
 }
 
 PlayMode::~PlayMode() {
@@ -185,7 +177,10 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 			0.0f, 0.0f, 0.0f, 1.0f
 		));
 
-		font_rasterizers.at("willy").raster_text("abcdefghijklmnop", 16, glm::u8vec3(255, 0, 255), glm::vec2(0.f));
+		static glm::vec2 pen = glm::uvec2(50.f, 100.f);
+		font_rasterizers.at("willy").set_drawable_size(drawable_size);
+		const char *str = "yo hows it going! today is a new day. what are you up to? want to go hang out at the park? we can have a barbeque too if you want.";
+		font_rasterizers.at("willy").raster_text(str, sizeof(str), glm::u8vec3(0, 0, 0), pen);
 	}
 	GL_ERRORS();
 }
