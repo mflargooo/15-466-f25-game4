@@ -1,7 +1,7 @@
 #include "PlayMode.hpp"
 
 #include "LitColorTextureProgram.hpp"
-#include "ColorTextureProgram.hpp"
+#include "ScreenSpaceColorTextureProgram.hpp"
 
 #include "DrawLines.hpp"
 #include "Mesh.hpp"
@@ -47,7 +47,7 @@ Load< MeshBuffer > test_meshes(LoadTagDefault, []() -> MeshBuffer const * {
 
 Load< Scene > test_scene(LoadTagDefault, []() -> Scene const * {
 	return new Scene(data_path("font_texture_atlas_test.scene"), [&](Scene &scene, Scene::Transform *transform, std::string const &mesh_name){
-		Mesh const &mesh = test_meshes->lookup(mesh_name);
+		/*Mesh const &mesh = test_meshes->lookup(mesh_name);
 
 		scene.drawables.emplace_back(transform);
 		Scene::Drawable &ref = scene.drawables.back();
@@ -56,7 +56,7 @@ Load< Scene > test_scene(LoadTagDefault, []() -> Scene const * {
 		ref.pipeline.vao = test_meshes_for_color_texture_program;
 		ref.pipeline.type = mesh.type;
 		ref.pipeline.start = mesh.start;
-		ref.pipeline.count = mesh.count;
+		ref.pipeline.count = mesh.count;*/
 	});
 });
 
@@ -69,16 +69,13 @@ PlayMode::PlayMode() : scene(*test_scene) {
 	font_rasterizers.try_emplace("willy", "fonts/windsol.ttf", 128);
 	assert(font_rasterizers.size() == 1);
 	font_rasterizers.at("willy").register_alphabet_to_texture("abcdefghijklmnop", 16, 512);
-
+	
 	for (auto &drawable : scene.drawables) {
 		drawable.pipeline.textures[0].texture = font_rasterizers.at("willy").texture;
 		drawable.pipeline.textures[1].texture = font_rasterizers.at("willy").texture;
 		drawable.pipeline.textures[2].texture = font_rasterizers.at("willy").texture;
 		drawable.pipeline.textures[3].texture = font_rasterizers.at("willy").texture;
 	}
-	
-	//scene.drawables.back().pipeline.vao = font_rasterizers.at("willy").vao;
-	//font_rasterizers.at("willy").raster_text("abcg", 4, glm::u8vec4(255, 255, 255, 255), glm::vec2(5.0f));
 	//font_rasterizers.at("willy").raster_text("hello capybara", -1, glm::vec2(0.0f));
 }
 
@@ -129,19 +126,6 @@ bool PlayMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
 			SDL_SetWindowRelativeMouseMode(Mode::window, true);
 			return true;
 		}
-	} else if (evt.type == SDL_EVENT_MOUSE_MOTION) {
-		if (SDL_GetWindowRelativeMouseMode(Mode::window) == true) {
-			glm::vec2 motion = glm::vec2(
-				evt.motion.xrel / float(window_size.y),
-				-evt.motion.yrel / float(window_size.y)
-			);
-			camera->transform->rotation = glm::normalize(
-				camera->transform->rotation
-				* glm::angleAxis(-motion.x * camera->fovy, glm::vec3(0.0f, 1.0f, 0.0f))
-				* glm::angleAxis(motion.y * camera->fovy, glm::vec3(1.0f, 0.0f, 0.0f))
-			);
-			return true;
-		}
 	}
 
 	return false;
@@ -150,24 +134,10 @@ bool PlayMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
 void PlayMode::update(float elapsed) {
 	//move camera:
 	{
-
-		//combine inputs into a move:
-		constexpr float PlayerSpeed = 30.0f;
-		glm::vec2 move = glm::vec2(0.0f);
-		if (left.pressed && !right.pressed) move.x =-1.0f;
-		if (!left.pressed && right.pressed) move.x = 1.0f;
-		if (down.pressed && !up.pressed) move.y =-1.0f;
-		if (!down.pressed && up.pressed) move.y = 1.0f;
-
-		//make it so that moving diagonally doesn't go faster:
-		if (move != glm::vec2(0.0f)) move = glm::normalize(move) * PlayerSpeed * elapsed;
-
 		glm::mat4x3 frame = camera->transform->make_parent_from_local();
 		glm::vec3 frame_right = frame[0];
 		//glm::vec3 up = frame[1];
 		glm::vec3 frame_forward = -frame[2];
-
-		camera->transform->position += move.x * frame_right + move.y * frame_forward;
 	}
 
 	{ //update listener to camera position:
@@ -196,7 +166,7 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 	glUniform3fv(lit_color_texture_program->LIGHT_ENERGY_vec3, 1, glm::value_ptr(glm::vec3(1.0f, 1.0f, 0.95f)));
 	glUseProgram(0);
 
-	glClearColor(.5f, 0.5f, 0.5f, 1.0f);
+	glClearColor(.25f, 0.25f, 0.25f, 1.0f);
 	glClearDepth(1.0f); //1.0 is actually the default value to clear the depth buffer to, but FYI you can change it.
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -215,21 +185,7 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 			0.0f, 0.0f, 0.0f, 1.0f
 		));
 
-		constexpr float H = 0.09f;
-		lines.draw_text("Mouse motion rotates camera; WASD moves; escape ungrabs mouse",
-			glm::vec3(-aspect + 0.1f * H, -1.0 + 0.1f * H, 0.0),
-			glm::vec3(H, 0.0f, 0.0f), glm::vec3(0.0f, H, 0.0f),
-			glm::u8vec4(0x00, 0x00, 0x00, 0x00));
-		float ofs = 2.0f / drawable_size.y;
-		lines.draw_text("Mouse motion rotates camera; WASD moves; escape ungrabs mouse",
-			glm::vec3(-aspect + 0.1f * H + ofs, -1.0 + + 0.1f * H + ofs, 0.0),
-			glm::vec3(H, 0.0f, 0.0f), glm::vec3(0.0f, H, 0.0f),
-			glm::u8vec4(0xff, 0xff, 0xff, 0x00));
+		font_rasterizers.at("willy").raster_text("abcdefghijklmnop", 16, glm::u8vec3(255, 0, 255), glm::vec2(0.f));
 	}
 	GL_ERRORS();
-}
-
-glm::vec3 PlayMode::get_leg_tip_position() {
-	//the vertex position here was read from the model in blender:
-	return lower_leg->make_world_from_local() * glm::vec4(-1.26137f, -11.861f, 0.0f, 1.0f);
 }

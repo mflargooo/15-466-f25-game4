@@ -36,16 +36,14 @@ struct FontRast {
     // len = number of characters in alphabet to register to texture
     GLuint texture;
     void register_alphabet_to_texture(const char *alphabet, int len, GLsizei texture_size);
-    void raster_text(const char *str, int len, glm::u8vec4 color, glm::vec2 abs_coords);
     GlyphTexInfo lookup(const unsigned char chr);
+    void raster_text(const char *str, int len, glm::u8vec3 color, glm::vec2 abs_coords);
     
     FontRast(const char *fontfile, unsigned int pixel_height);
-    GLuint vao, vbo;
     
     private:
         struct Vertex {
-            glm::vec3 Position;
-            glm::u8vec4 Color;
+            glm::vec2 Position;
             glm::vec2 TexCoord;
         };
 
@@ -57,5 +55,5 @@ struct FontRast {
 
         // maintains vertex arrays per font
         GLuint program;
-        GLintptr vbo_offset = 0;
+        GLuint vao, vbo;
 };

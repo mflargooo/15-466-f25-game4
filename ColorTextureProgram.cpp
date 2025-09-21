@@ -3,7 +3,35 @@
 #include "gl_compile_program.hpp"
 #include "gl_errors.hpp"
 
-Load< ColorTextureProgram > color_texture_program(LoadTagEarly);
+Scene::Drawable::Pipeline color_texture_program_pipeline;
+
+Load< ColorTextureProgram > color_texture_program(LoadTagEarly, []() -> ColorTextureProgram const * {
+	ColorTextureProgram *ret = new ColorTextureProgram();
+
+	//----- build the pipeline template -----
+	color_texture_program_pipeline.program = ret->program;
+
+	color_texture_program_pipeline.CLIP_FROM_OBJECT_mat4 = ret->OBJECT_TO_CLIP_mat4;
+
+	//make a 1-pixel white texture to bind by default:
+	GLuint tex;
+	glGenTextures(1, &tex);
+
+	glBindTexture(GL_TEXTURE_2D, tex);
+	std::vector< glm::u8vec4 > tex_data(1, glm::u8vec4(0xff));
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 1, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, tex_data.data());
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glBindTexture(GL_TEXTURE_2D, 0);
+
+
+	color_texture_program_pipeline.textures[0].texture = tex;
+	color_texture_program_pipeline.textures[0].target = GL_TEXTURE_2D;
+
+	return ret;
+});
 
 ColorTextureProgram::ColorTextureProgram() {
 	//Compile vertex and fragment shaders using the convenient 'gl_compile_program' helper function:
