@@ -2,11 +2,13 @@
 
 #include "Scene.hpp"
 #include "Sound.hpp"
+#include "FontRast.hpp"
 
 #include <glm/glm.hpp>
 
 #include <vector>
 #include <deque>
+#include <list>
 
 struct PlayMode : Mode {
 	PlayMode();
@@ -39,13 +41,10 @@ struct PlayMode : Mode {
 
 	glm::vec3 get_leg_tip_position();
 
-	//music coming from the tip of the leg (as a demonstration):
-	std::shared_ptr< Sound::PlayingSample > leg_tip_loop;
-
-	//car honk sound:
-	std::shared_ptr< Sound::PlayingSample > honk_oneshot;
-	
 	//camera:
 	Scene::Camera *camera = nullptr;
+
+	// fonts
+	std::map < std::string, FontRast > font_rasterizers;
 
 };

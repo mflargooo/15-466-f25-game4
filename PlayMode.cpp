@@ -1,6 +1,7 @@
 #include "PlayMode.hpp"
 
 #include "LitColorTextureProgram.hpp"
+#include "ColorTextureProgram.hpp"
 
 #include "DrawLines.hpp"
 #include "Mesh.hpp"
@@ -12,6 +13,7 @@
 
 #include <random>
 
+/*
 GLuint hexapod_meshes_for_lit_color_texture_program = 0;
 Load< MeshBuffer > hexapod_meshes(LoadTagDefault, []() -> MeshBuffer const * {
 	MeshBuffer const *ret = new MeshBuffer(data_path("hexapod.pnct"));
@@ -32,42 +34,52 @@ Load< Scene > hexapod_scene(LoadTagDefault, []() -> Scene const * {
 		drawable.pipeline.type = mesh.type;
 		drawable.pipeline.start = mesh.start;
 		drawable.pipeline.count = mesh.count;
+	});
+});
+*/
 
+GLuint test_meshes_for_color_texture_program = 0;
+Load< MeshBuffer > test_meshes(LoadTagDefault, []() -> MeshBuffer const * {
+	MeshBuffer const *ret = new MeshBuffer(data_path("font_texture_atlas_test.pnct"));
+	test_meshes_for_color_texture_program = ret->make_vao_for_program(lit_color_texture_program->program);
+	return ret;
+});
+
+Load< Scene > test_scene(LoadTagDefault, []() -> Scene const * {
+	return new Scene(data_path("font_texture_atlas_test.scene"), [&](Scene &scene, Scene::Transform *transform, std::string const &mesh_name){
+		Mesh const &mesh = test_meshes->lookup(mesh_name);
+
+		scene.drawables.emplace_back(transform);
+		Scene::Drawable &ref = scene.drawables.back();
+
+		ref.pipeline = lit_color_texture_program_pipeline;
+		ref.pipeline.vao = test_meshes_for_color_texture_program;
+		ref.pipeline.type = mesh.type;
+		ref.pipeline.start = mesh.start;
+		ref.pipeline.count = mesh.count;
 	});
 });
 
-Load< Sound::Sample > dusty_floor_sample(LoadTagDefault, []() -> Sound::Sample const * {
-	return new Sound::Sample(data_path("dusty-floor.opus"));
-});
-
-
-Load< Sound::Sample > honk_sample(LoadTagDefault, []() -> Sound::Sample const * {
-	return new Sound::Sample(data_path("honk.wav"));
-});
-
-
-PlayMode::PlayMode() : scene(*hexapod_scene) {
-	//get pointers to leg for convenience:
-	for (auto &transform : scene.transforms) {
-		if (transform.name == "Hip.FL") hip = &transform;
-		else if (transform.name == "UpperLeg.FL") upper_leg = &transform;
-		else if (transform.name == "LowerLeg.FL") lower_leg = &transform;
-	}
-	if (hip == nullptr) throw std::runtime_error("Hip not found.");
-	if (upper_leg == nullptr) throw std::runtime_error("Upper leg not found.");
-	if (lower_leg == nullptr) throw std::runtime_error("Lower leg not found.");
-
-	hip_base_rotation = hip->rotation;
-	upper_leg_base_rotation = upper_leg->rotation;
-	lower_leg_base_rotation = lower_leg->rotation;
+PlayMode::PlayMode() : scene(*test_scene) {
 
 	//get pointer to camera for convenience:
 	if (scene.cameras.size() != 1) throw std::runtime_error("Expecting scene to have exactly one camera, but it has " + std::to_string(scene.cameras.size()));
 	camera = &scene.cameras.front();
 
-	//start music loop playing:
-	// (note: position will be over-ridden in update())
-	leg_tip_loop = Sound::loop_3D(*dusty_floor_sample, 1.0f, get_leg_tip_position(), 10.0f);
+	font_rasterizers.try_emplace("willy", "fonts/windsol.ttf", 128);
+	assert(font_rasterizers.size() == 1);
+	font_rasterizers.at("willy").register_alphabet_to_texture("abcdefghijklmnop", 16, 512);
+
+	for (auto &drawable : scene.drawables) {
+		drawable.pipeline.textures[0].texture = font_rasterizers.at("willy").texture;
+		drawable.pipeline.textures[1].texture = font_rasterizers.at("willy").texture;
+		drawable.pipeline.textures[2].texture = font_rasterizers.at("willy").texture;
+		drawable.pipeline.textures[3].texture = font_rasterizers.at("willy").texture;
+	}
+	
+	//scene.drawables.back().pipeline.vao = font_rasterizers.at("willy").vao;
+	//font_rasterizers.at("willy").raster_text("abcg", 4, glm::u8vec4(255, 255, 255, 255), glm::vec2(5.0f));
+	//font_rasterizers.at("willy").raster_text("hello capybara", -1, glm::vec2(0.0f));
 }
 
 PlayMode::~PlayMode() {
@@ -96,8 +108,7 @@ bool PlayMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
 			down.pressed = true;
 			return true;
 		} else if (evt.key.key == SDLK_SPACE) {
-			if (honk_oneshot) honk_oneshot->stop();
-			honk_oneshot = Sound::play_3D(*honk_sample, 0.3f, glm::vec3(4.6f, -7.8f, 6.9f)); //hardcoded position of front of car, from blender
+
 		}
 	} else if (evt.type == SDL_EVENT_KEY_UP) {
 		if (evt.key.key == SDLK_A) {
@@ -137,27 +148,6 @@ bool PlayMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
 }
 
 void PlayMode::update(float elapsed) {
-
-	//slowly rotates through [0,1):
-	wobble += elapsed / 10.0f;
-	wobble -= std::floor(wobble);
-
-	hip->rotation = hip_base_rotation * glm::angleAxis(
-		glm::radians(5.0f * std::sin(wobble * 2.0f * float(M_PI))),
-		glm::vec3(0.0f, 1.0f, 0.0f)
-	);
-	upper_leg->rotation = upper_leg_base_rotation * glm::angleAxis(
-		glm::radians(7.0f * std::sin(wobble * 2.0f * 2.0f * float(M_PI))),
-		glm::vec3(0.0f, 0.0f, 1.0f)
-	);
-	lower_leg->rotation = lower_leg_base_rotation * glm::angleAxis(
-		glm::radians(10.0f * std::sin(wobble * 3.0f * 2.0f * float(M_PI))),
-		glm::vec3(0.0f, 0.0f, 1.0f)
-	);
-
-	//move sound to follow leg tip position:
-	leg_tip_loop->set_position(get_leg_tip_position(), 1.0f / 60.0f);
-
 	//move camera:
 	{
 
@@ -206,7 +196,7 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 	glUniform3fv(lit_color_texture_program->LIGHT_ENERGY_vec3, 1, glm::value_ptr(glm::vec3(1.0f, 1.0f, 0.95f)));
 	glUseProgram(0);
 
-	glClearColor(0.5f, 0.5f, 0.5f, 1.0f);
+	glClearColor(.5f, 0.5f, 0.5f, 1.0f);
 	glClearDepth(1.0f); //1.0 is actually the default value to clear the depth buffer to, but FYI you can change it.
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 

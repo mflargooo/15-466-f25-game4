@@ -1,13 +1,13 @@
 
-BLENDER="C:\Program Files\Blender Foundation\Blender 4.2.1\blender.exe"
+BLENDER="C:\Program Files\Blender Foundation\Blender 4.5\blender.exe"
 DIST=../dist
 
 all : \
-    $(DIST)/hexapod.pnct \
-    $(DIST)/hexapod.scene \
+    $(DIST)/font_texture_atlas_test.pnct \
+    $(DIST)/font_texture_atlas_test.scene \
 
-$(DIST)/hexapod.scene : hexapod.blend export-scene.py
-    $(BLENDER) --background --python export-scene.py -- "hexapod.blend:Main" "$(DIST)/hexapod.scene"
+$(DIST)/font_texture_atlas_test.scene : font_texture_atlas_test.blend export-scene.py
+    $(BLENDER) --background --python export-scene.py -- "font_texture_atlas_test.blend:Main" "$(DIST)/font_texture_atlas_test.scene"
 
-$(DIST)/hexapod.pnct : hexapod.blend export-meshes.py
-    $(BLENDER) --background --python export-meshes.py -- "hexapod.blend:Main" "$(DIST)/hexapod.pnct" 
+$(DIST)/font_texture_atlas_test.pnct : font_texture_atlas_test.blend export-meshes.py
+    $(BLENDER) --background --python export-meshes.py -- "font_texture_atlas_test.blend:Main" "$(DIST)/font_texture_atlas_test.pnct" 

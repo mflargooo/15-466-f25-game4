@@ -37,6 +37,7 @@ if (maek.OS === "windows") {
 		`/I${NEST_LIBS}/harfbuzz/include`,
 		`/I${NEST_LIBS}/freetype/include`,
 		//#disable a few warnings:
+		`/fsanitize=address`,
 		`/wd4146`, //-1U is still unsigned
 		`/wd4297`, //unforunately SDLmain is nothrow
 		`/wd4100`, //unreferenced formal parameter
@@ -150,10 +151,11 @@ if (maek.OS === 'windows') {
 // objFileBase (optional): base name object file to produce (if not supplied, set to options.objDir + '/' + cppFile without the extension)
 //returns objFile: objFileBase + a platform-dependant suffix ('.o' or '.obj')
 const game_names = [
+	maek.CPP('FontRast.cpp'),
 	maek.CPP('PlayMode.cpp'),
 	maek.CPP('main.cpp'),
 	maek.CPP('LitColorTextureProgram.cpp'),
-	//maek.CPP('ColorTextureProgram.cpp'),  //not used right now, but you might want it
+	maek.CPP('ColorTextureProgram.cpp'),  //not used right now, but you might want it
 	maek.CPP('Sound.cpp'),
 	maek.CPP('load_wav.cpp'),
 	maek.CPP('load_opus.cpp')
