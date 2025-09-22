@@ -3,6 +3,7 @@
 #include "Scene.hpp"
 #include "Sound.hpp"
 #include "FontRast.hpp"
+#include "StoryGraph.hpp"
 
 #include <glm/glm.hpp>
 
@@ -46,5 +47,8 @@ struct PlayMode : Mode {
 
 	// fonts
 	std::map < std::string, FontRast > font_rasterizers;
+
+	// story
+	StoryGraph story_graph;
 
 };

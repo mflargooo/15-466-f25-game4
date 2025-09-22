@@ -36,12 +36,11 @@ struct FontRast {
     // len = number of characters in alphabet to register to texture
     GLuint texture;
     void set_line_spacing(const float line_spacing);
-    void set_drawable_size(glm::uvec2 const &drawable_size);
     void register_alphabet_to_texture(const char *alphabet, int len, GLsizei texture_size);
-    GlyphTexInfo lookup(const unsigned char chr);
-    void raster_text(const char *word, size_t len, glm::u8vec3 color, glm::vec2 &at);
+    GlyphTexInfo lookup(const char chr);
+    void raster_text(const char *str, size_t len, glm::u8vec3 color, glm::vec2 &at);
     
-    FontRast(const char *fontfile, unsigned int pixel_height);
+    FontRast(std::string fontfile, unsigned int pixel_height);
     
     private:
         struct Vertex {
@@ -49,7 +48,12 @@ struct FontRast {
             glm::vec2 TexCoord;
         };
 
-        glm::uvec2 screen_size;
+        struct Viewport {
+            GLint x;
+            GLint y;
+            GLint width;
+            GLint height;
+        } viewport;
         float line_spacing = 1.5f;
 
         std::map< hb_codepoint_t, GlyphTexInfo > lookup_tex;

@@ -2,6 +2,7 @@
 
 #include "LitColorTextureProgram.hpp"
 #include "ScreenSpaceColorTextureProgram.hpp"
+#include "StoryGraph.hpp"
 
 #include "DrawLines.hpp"
 #include "Mesh.hpp"
@@ -13,30 +14,6 @@
 
 #include <random>
 
-/*
-GLuint hexapod_meshes_for_lit_color_texture_program = 0;
-Load< MeshBuffer > hexapod_meshes(LoadTagDefault, []() -> MeshBuffer const * {
-	MeshBuffer const *ret = new MeshBuffer(data_path("hexapod.pnct"));
-	hexapod_meshes_for_lit_color_texture_program = ret->make_vao_for_program(lit_color_texture_program->program);
-	return ret;
-});
-
-Load< Scene > hexapod_scene(LoadTagDefault, []() -> Scene const * {
-	return new Scene(data_path("hexapod.scene"), [&](Scene &scene, Scene::Transform *transform, std::string const &mesh_name){
-		Mesh const &mesh = hexapod_meshes->lookup(mesh_name);
-
-		scene.drawables.emplace_back(transform);
-		Scene::Drawable &drawable = scene.drawables.back();
-
-		drawable.pipeline = lit_color_texture_program_pipeline;
-
-		drawable.pipeline.vao = hexapod_meshes_for_lit_color_texture_program;
-		drawable.pipeline.type = mesh.type;
-		drawable.pipeline.start = mesh.start;
-		drawable.pipeline.count = mesh.count;
-	});
-});
-*/
 
 GLuint test_meshes_for_color_texture_program = 0;
 Load< MeshBuffer > test_meshes(LoadTagDefault, []() -> MeshBuffer const * {
@@ -66,9 +43,15 @@ PlayMode::PlayMode() : scene(*test_scene) {
 	if (scene.cameras.size() != 1) throw std::runtime_error("Expecting scene to have exactly one camera, but it has " + std::to_string(scene.cameras.size()));
 	camera = &scene.cameras.front();
 
-	font_rasterizers.try_emplace("willy", "fonts/windsol.ttf", 32);
-	assert(font_rasterizers.size() == 1);
-	font_rasterizers.at("willy").register_alphabet_to_texture(" \n.!?'-abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ", 53, 1024);
+	font_rasterizers.try_emplace("willy", data_path("../fonts/windsol.ttf"), 32);
+
+	char ascii[94];
+	for (char i = 0; i < 94; i++) {
+		ascii[i] = i + 32; 
+	}
+	font_rasterizers.at("willy").register_alphabet_to_texture(ascii, 94, 2048);
+
+	story_graph.init("./late_for_work.txt");
 }
 
 PlayMode::~PlayMode() {
@@ -176,11 +159,8 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 			0.0f, 0.0f, 1.0f, 0.0f,
 			0.0f, 0.0f, 0.0f, 1.0f
 		));
-
-		static glm::vec2 pen = glm::uvec2(50.f, 100.f);
-		font_rasterizers.at("willy").set_drawable_size(drawable_size);
-		const char *str = "yo hows it going! today is a new day. what are you up to? want to go hang out at the park? we can have a barbeque too if you want.";
-		font_rasterizers.at("willy").raster_text(str, sizeof(str), glm::u8vec3(0, 0, 0), pen);
 	}
+	glm::vec2 pen = glm::vec2(50.f, 100.f);
+	story_graph.render_scene(font_rasterizers.at("willy"), pen);
 	GL_ERRORS();
 }

@@ -15,9 +15,9 @@
 // to reduce recomputation
 
 // gl init code inspired by DrawLines, Mesh, and https://learnopengl.com/In-Practice/Text-Rendering 
-FontRast::FontRast(const char *fontfile, unsigned int pixel_height) {
+FontRast::FontRast(std::string fontfile, unsigned int pixel_height) {
 	FT_Init_FreeType(&library);
-	FT_New_Face(library, fontfile, 0 /* make a system to allocate unsused indices */, &ft_face);
+	FT_New_Face(library, fontfile.data(), 0 /* make a system to allocate unsused indices */, &ft_face);
     FT_Set_Pixel_Sizes(ft_face, 0, pixel_height);
 
     font = hb_ft_font_create(ft_face, NULL);
@@ -27,12 +27,9 @@ FontRast::FontRast(const char *fontfile, unsigned int pixel_height) {
     glGenVertexArrays(1, &vao);
 
     glBindBuffer(GL_ARRAY_BUFFER, vbo);
-    GL_ERRORS();
-    glBufferData(GL_ARRAY_BUFFER, sizeof(Vertex) * 6, nullptr, GL_DYNAMIC_DRAW);
-    GL_ERRORS();
+    glBufferData(GL_ARRAY_BUFFER, sizeof(Vertex) * 6, nullptr, GL_STATIC_DRAW);
 
     glBindVertexArray(vao);
-    GL_ERRORS();
     
     // register attribs
     glEnableVertexAttribArray(screen_space_color_texture_program->Position_vec2);
@@ -52,10 +49,6 @@ FontRast::FontRast(const char *fontfile, unsigned int pixel_height) {
 
 void FontRast::set_line_spacing(const float spacing) {
     line_spacing = spacing;
-}
-
-void FontRast::set_drawable_size(glm::uvec2 const &drawable_size) {
-    screen_size = drawable_size;
 }
 
 // gl subimage method for font texture management inspired by 
@@ -133,7 +126,7 @@ void FontRast::register_alphabet_to_texture(const char *alphabet, int len, GLsiz
     GL_ERRORS();
 }
 
-GlyphTexInfo FontRast::lookup(const unsigned char chr) {
+GlyphTexInfo FontRast::lookup(const char chr) {
     if (lookup_tex.find(chr) == lookup_tex.end()) {
         std::cout << std::format("Character {} has not been registered to the texture.", chr) << std::endl;
     }
@@ -152,7 +145,7 @@ void FontRast::raster_word(const char *word, size_t len, hb_glyph_position_t *po
     }
 
     // text will always have same margin as at.x (pen start x)
-    if (width + at_x >= (float)screen_size.x - left_margin) {
+    if (width + at_x >= (float)viewport.width - left_margin) {
         at_x = left_margin;
         at_y += (float)(ft_face->height) / 64.f * line_spacing;
     }
@@ -200,13 +193,17 @@ void FontRast::raster_word(const char *word, size_t len, hb_glyph_position_t *po
     at.y = at_y;
 }
 
+// leaves pen at the same left margin at a new line.
 void FontRast::raster_text(const char *str, size_t len, glm::u8vec3 color, glm::vec2 &at) {
     hb_buffer_add_utf8(buf, str, (int)len, 0, -1);
 	hb_buffer_guess_segment_properties(buf);
 	hb_shape(font, buf, NULL, 0);
 
 	// viewport 0, 0 is bottom-left -> top-left
-	glm::mat4 projection = glm::ortho(0.f, (float)screen_size.x, (float)screen_size.y, 0.f,  -1.f, 1.f);
+    glGetIntegerv(GL_VIEWPORT, (GLint *)&viewport);
+
+    glm::mat4 projection = glm::ortho((float)viewport.x, (float)(viewport.x + viewport.width), 
+        (float)(viewport.y + viewport.height), (float)viewport.y,  -1.f, 1.f);
 
     hb_glyph_info_t *info = hb_buffer_get_glyph_infos(buf, NULL);
 	hb_glyph_position_t *pos = hb_buffer_get_glyph_positions(buf, NULL);
@@ -221,6 +218,7 @@ void FontRast::raster_text(const char *str, size_t len, glm::u8vec3 color, glm::
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, texture);
 
+    glDisable(GL_DEPTH_TEST);
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
@@ -251,6 +249,7 @@ void FontRast::raster_text(const char *str, size_t len, glm::u8vec3 color, glm::
     }
 
     glDisable(GL_BLEND);
+    glEnable(GL_DEPTH_TEST);
 
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, 0);
@@ -261,4 +260,9 @@ void FontRast::raster_text(const char *str, size_t len, glm::u8vec3 color, glm::
     hb_buffer_clear_contents(buf);
     
     GL_ERRORS();
+
+    local_at.x = at.x;
+    local_at.y += ft_face->height / 64 * line_spacing * 1.2f;
+
+    at = local_at;
 }

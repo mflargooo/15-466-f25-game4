@@ -1,0 +1,31 @@
+@init
+%text=BZZZP BZZZP... BZZP BZZZP! You're alarm clock jolts you awake. You can't be late three days in a row or you'll be at risk for termination.
+$choice=Get dressed.|kitchen
+
+@kitchen
+%text=You quickly choose an outfit and put it on. You run to the bathroom and brush your teeth... a quick brush is better than nothing. Your stomach grumbles...
+$choice=Make a quick breakfast.|breakfast
+$choice=Stop by a food place on the way out.|food_place
+
+@breakfast
+%You whip up some eggs in record time. It only took you 10 minutes total to cook and eat! You leave the dishes scattered all over the place.%
+$choice=Grab keys and go!|running
+
+@food_place
+%text=You run out of the house and towards the station. You make it to the donut shop that is around the corner of the house. Hmm... everything seems soo good!
+$choice=Buy a glazed donut.|running
+$choice=Buy a jelly-filled donut.|running
+$choice=Buy an avocado toast.|running
+
+@running
+%text=You take a look at your watch as you are running out the door. If you keep up at the pace you are going, you might just have enough time to slip on board the next train! You usually take the longer route from here through the local park, but you may spare a few minutes if you take that one shortcut.
+$choice=Run through the park.|park
+$choice=Take the shortcut.|shortcut
+
+@park
+%text=You decide to head to the station through the path you know. You waste no time to reach the station and you watch as the train pulls in
+$end
+
+@shortcut
+%text=You decide to take the shortcut today instead of the usual path. You bolt down the path, and round the final corner.. There stands a pack of stray dogs in font of you, and they seem super angry.
+$end
