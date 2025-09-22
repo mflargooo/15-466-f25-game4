@@ -149,6 +149,9 @@ int main(int argc, char **argv) {
 				//handle input:
 				if (Mode::current && Mode::current->handle_event(evt, window_size)) {
 					// mode handled it; great
+				} else if (evt.type == SDL_EVENT_KEY_DOWN && evt.key.key == SDLK_R) {
+					Mode::set_current(std::make_shared< PlayMode >());
+					break;
 				} else if (evt.type == SDL_EVENT_QUIT) {
 					Mode::set_current(nullptr);
 					break;

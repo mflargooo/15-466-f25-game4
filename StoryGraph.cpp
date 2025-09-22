@@ -1,8 +1,21 @@
 #include "StoryGraph.hpp"
 #include "FontRast.hpp"
 #include "data_path.hpp"
+#include <SDL3/SDL.h>
 #include <iostream>
 #include <fstream>
+
+void push_quit() {
+    SDL_Event evt = {};
+    evt.type = SDL_EVENT_QUIT;
+    SDL_PushEvent(&evt);
+}
+void push_keydown(SDL_Keycode code) {
+    SDL_Event evt = {};
+    evt.type = SDL_EVENT_KEY_DOWN;
+    evt.key.key = code;
+    SDL_PushEvent(&evt);
+}
 
 // trim by https://cplusplus.com/forum/beginner/251052/ but modified to handle one sided
 // whitespace case
@@ -280,8 +293,23 @@ void StoryGraph::init(const char *filename) {
                     curr_cond = semi_at + 1;
                 }
             }
+            // simulating key pressed by https://stackoverflow.com/questions/35760351/simulate-keyboard-button-press-sdl-library
             else if (line.substr(1, 3) == "end") {
-                std::cout << "Reached end of branch" << std::endl;
+                curr->choices.emplace_back();
+                Node::Choice &pa = curr->choices.back();
+                pa.text = "Play Again";
+                pa.to_state = "init";
+                pa.on_select.emplace_back([]() {
+                    push_keydown(SDLK_R);
+                });
+
+                curr->choices.emplace_back();
+                Node::Choice &quit = curr->choices.back();
+                quit.text = "Quit";
+                quit.to_state = "init";
+                quit.on_select.emplace_back([]() {
+                    push_quit();
+                });
             }
         }
     }
@@ -344,14 +372,13 @@ void StoryGraph::next_selection() {
 
 void StoryGraph::transition() {
     size_t select = state->selection;
-    state->selection = 0;
 
     for (auto func : state->choices[select].on_select) {
         func();
     }
     debug_print();
     state = &nodes[state->choices[select].to_state];
-    next_selection();
+    if (state->choices[state->selection].hide) next_selection();
 }
 
 void StoryGraph::debug_print() {
