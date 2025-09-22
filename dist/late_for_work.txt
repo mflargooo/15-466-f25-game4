@@ -1,6 +1,14 @@
+begindef
+int time = 0
+string food=
+enddef
+
 @init
 %text=BZZZP BZZZP... BZZP BZZZP! You're alarm clock jolts you awake. You can't be late three days in a row or you'll be at risk for termination.
-$choice=Get dressed.|kitchen
+$choice=Get dressed.|show if time = 0; set time 2;|init
+$choice=Get dressed not eq.|show if not time = 0;|init
+$choice=Get dressed g.|show if time > 1; add time 1;|init
+$choice=Get dressed l.|show if time < 1; sub time 2;|init
 
 @kitchen
 %text=You quickly choose an outfit and put it on. You run to the bathroom and brush your teeth... a quick brush is better than nothing. Your stomach grumbles...
@@ -8,14 +16,14 @@ $choice=Make a quick breakfast.|breakfast
 $choice=Stop by a food place on the way out.|food_place
 
 @breakfast
-%You whip up some eggs in record time. It only took you 10 minutes total to cook and eat! You leave the dishes scattered all over the place.%
+%text=You whip up some eggs in record time. It only took you 10 minutes total to cook and eat! You leave the dishes scattered all over the place.
 $choice=Grab keys and go!|running
 
 @food_place
 %text=You run out of the house and towards the station. You make it to the donut shop that is around the corner of the house. Hmm... everything seems soo good!
-$choice=Buy a glazed donut.|running
-$choice=Buy a jelly-filled donut.|running
-$choice=Buy an avocado toast.|running
+$choice=Buy a glazed donut.|set food donut;|running
+$choice=Buy a jelly-filled donut.|set food donut;|running
+$choice=Buy an avocado toast.|set food toast;|running
 
 @running
 %text=You take a look at your watch as you are running out the door. If you keep up at the pace you are going, you might just have enough time to slip on board the next train! You usually take the longer route from here through the local park, but you may spare a few minutes if you take that one shortcut.

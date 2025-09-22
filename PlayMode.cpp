@@ -74,13 +74,16 @@ bool PlayMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
 		} else if (evt.key.key == SDLK_W) {
 			up.downs += 1;
 			up.pressed = true;
+			story_graph.prev_selection();
 			return true;
 		} else if (evt.key.key == SDLK_S) {
 			down.downs += 1;
 			down.pressed = true;
+			story_graph.next_selection();
 			return true;
-		} else if (evt.key.key == SDLK_SPACE) {
-
+		} else if (evt.key.key == SDLK_SPACE || evt.key.key == SDLK_RETURN) {
+			story_graph.transition();
+			return true;
 		}
 	} else if (evt.type == SDL_EVENT_KEY_UP) {
 		if (evt.key.key == SDLK_A) {
