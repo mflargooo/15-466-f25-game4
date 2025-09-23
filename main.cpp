@@ -68,14 +68,14 @@ int main(int argc, char **argv) {
 	//create window:
 	Mode::window = SDL_CreateWindow(
 		"Choremaster", //TODO: remember to set a title for your game!
-		1920, 1080, //TODO: modify window size if you'd like
+		1280, 720,
 		SDL_WINDOW_OPENGL
-		// | SDL_WINDOW_RESIZABLE //uncomment to allow resizing
+		| SDL_WINDOW_RESIZABLE //uncomment to allow resizing
 		| SDL_WINDOW_HIGH_PIXEL_DENSITY //uncomment for full resolution on high-DPI screens
 	);
 
 	//prevent exceedingly tiny windows when resizing:
-	SDL_SetWindowMinimumSize(Mode::window,100,100);
+	SDL_SetWindowMinimumSize(Mode::window,1280,720);
 
 	if (!Mode::window) {
 		std::cerr << "Error creating SDL window: " << SDL_GetError() << std::endl;
