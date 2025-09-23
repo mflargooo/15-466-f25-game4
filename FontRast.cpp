@@ -150,11 +150,12 @@ void FontRast::raster_word(const char *word, size_t len, hb_glyph_position_t *po
         at_y += (float)(ft_face->height) / 64.f * line_spacing;
     }
 
+        // if time allows, make this computation ones per graph transition
     for (size_t i = 0; i < len; i++) {        
         GlyphTexInfo glyph = lookup(word[i]);
 
         float pen_x = at_x + (float)(pos[i].x_offset / 64.f) + (float)glyph.left;
-        float pen_y = at_y - (float)(pos[i].y_offset / 64) - (float)glyph.top;
+        float pen_y = at_y - (float)(pos[i].y_offset / 64.f) - (float)glyph.top;
 
         Vertex vertices[6];
 
@@ -184,8 +185,8 @@ void FontRast::raster_word(const char *word, size_t len, hb_glyph_position_t *po
 
         glDrawArrays(GL_TRIANGLES, 0, 6);
 
-        at_x += pos[i].x_advance / 64;
-        at_y += pos[i].y_advance / 64;
+        at_x += pos[i].x_advance / 64.f;
+        at_y += pos[i].y_advance / 64.f;
         GL_ERRORS();
     }
 
@@ -262,7 +263,7 @@ void FontRast::raster_text(const char *str, size_t len, glm::u8vec3 color, glm::
     GL_ERRORS();
 
     local_at.x = at.x;
-    local_at.y += ft_face->height / 64 * line_spacing * 1.2f;
+    local_at.y += ft_face->height / 64.f * line_spacing * 1.2f;
 
     at = local_at;
 }

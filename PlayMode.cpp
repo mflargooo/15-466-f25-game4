@@ -43,7 +43,8 @@ PlayMode::PlayMode() : scene(*test_scene) {
 	if (scene.cameras.size() != 1) throw std::runtime_error("Expecting scene to have exactly one camera, but it has " + std::to_string(scene.cameras.size()));
 	camera = &scene.cameras.front();
 
-	font_rasterizers.try_emplace("willy", data_path("../fonts/windsol.ttf"), 32);
+	font_rasterizers.try_emplace("willy", data_path("../fonts/windsol.ttf"), 64);
+	font_rasterizers.at("willy").set_line_spacing(3.2f);
 
 	char ascii[94];
 	for (char i = 0; i < 94; i++) {
@@ -163,7 +164,7 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 			0.0f, 0.0f, 0.0f, 1.0f
 		));
 	}
-	glm::vec2 pen = glm::vec2(50.f, 100.f);
+	glm::vec2 pen = glm::vec2(100.f, 150.f);
 	story_graph.render_scene(font_rasterizers.at("willy"), pen);
 	GL_ERRORS();
 }

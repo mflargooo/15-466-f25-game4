@@ -47,5 +47,6 @@ struct StoryGraph {
 
     private:
         bool has_same_type(std::string var, std::string val);
-        void debug_print();
+        void debug_nodes();
+        void debug_variables();
 };

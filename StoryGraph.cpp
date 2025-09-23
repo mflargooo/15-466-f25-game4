@@ -70,9 +70,11 @@ void StoryGraph::init(const char *filename) {
     
         if (line == "begindef") {
             def_block = true;
+            continue;
         }
         else if (line == "enddef") {
             def_block = false;
+            continue;
         }
 
         if (def_block) {
@@ -80,13 +82,13 @@ void StoryGraph::init(const char *filename) {
             size_t equal_at = line.find_last_of('=');
             if (datatype_at == std::string::npos || equal_at == std::string::npos) {
                 std::cout << "Invalid variable definition" << std::endl;
+                continue;
             }
             else {
                 std::string datatype = trim(line.substr(0, datatype_at));
                 std::string var = trim(line.substr(datatype_at + 1, equal_at - datatype_at - 1));
                 std::string val = trim(line.substr(equal_at + 1));
 
-                std::cout << datatype << std::endl << var << std::endl << val << std::endl;;
                 if (variables.find(var) != variables.end()) {
                     std::cout << "Variable " << var << " already defined" << std::endl;
                     continue;
@@ -143,14 +145,11 @@ void StoryGraph::init(const char *filename) {
                 size_t semi_at;
                 while ((semi_at = actions.find_first_of(";", curr_cond)) != std::string::npos) {
                     std::string action = trim(actions.substr(curr_cond, semi_at - curr_cond));
-                    std::cout << action << std::endl;
                     if (action.substr(0, 3) == "add") {
                         size_t space_at = action.find_first_of(' ', 4);
                         std::string var = trim(action.substr(4, space_at - 4));
                         std::string val = trim(action.substr(space_at + 1));
 
-                        std::cout << "add, " << var << ", " << val << std::endl;
-                        
                         if (variables.find(var) == variables.end()) {
                             std::cout << "Variable " << var << " not defined" << std::endl;
                             curr_cond = semi_at + 1;
@@ -175,8 +174,6 @@ void StoryGraph::init(const char *filename) {
                         std::string var = trim(action.substr(4, space_at - 4));
                         std::string val = trim(action.substr(space_at + 1));
                         
-                        std::cout << "sub, " << var << ", " << val << std::endl;
-
                         if (variables.find(var) == variables.end()) {
                             std::cout << "Variable " << var << " not defined" << std::endl;
                             curr_cond = semi_at + 1;
@@ -224,8 +221,6 @@ void StoryGraph::init(const char *filename) {
                         size_t space_at = action.find_first_of(' ', 8);
                         bool negate = trim(action.substr(8, space_at - 8)) == "not";
                         
-                        std::cout << trim(action.substr(8, space_at - 8)) << std::endl;
-                        
                         size_t start = 8;
                         if (negate) start += 4;
 
@@ -234,7 +229,6 @@ void StoryGraph::init(const char *filename) {
                         std::string op = trim(action.substr(space_at + 1, 1));
                         std::string val = trim(action.substr(space_at + 2, semi_at - space_at - 2));
 
-                        std::cout << "show if " << (negate ? "not" : "") << var << ", " << op << ", " << val << std::endl;
                         if (!has_same_type(var, val)) {
                             std::cout << "Invalid operation: type mismatch" << std::endl;
                             curr_cond = semi_at;
@@ -298,7 +292,7 @@ void StoryGraph::init(const char *filename) {
                 curr->choices.emplace_back();
                 Node::Choice &pa = curr->choices.back();
                 pa.text = "Play Again";
-                pa.to_state = "init";
+                pa.to_state = "end";
                 pa.on_select.emplace_back([]() {
                     push_keydown(SDLK_R);
                 });
@@ -306,7 +300,7 @@ void StoryGraph::init(const char *filename) {
                 curr->choices.emplace_back();
                 Node::Choice &quit = curr->choices.back();
                 quit.text = "Quit";
-                quit.to_state = "init";
+                quit.to_state = "end";
                 quit.on_select.emplace_back([]() {
                     push_quit();
                 });
@@ -321,7 +315,8 @@ void StoryGraph::init(const char *filename) {
     state = &nodes.at("init");
     assert(state);
 
-    // debug_print();
+    //debug_nodes();
+    //debug_variables();
 }
 
 void StoryGraph::render_scene(FontRast &rasterizer, glm::vec2 &anchor) {
@@ -354,20 +349,38 @@ void StoryGraph::render_scene(FontRast &rasterizer, glm::vec2 &anchor) {
 
 void StoryGraph::prev_selection() {
     size_t select = state->selection;
+    
+    size_t failsafe = 0;
     do {
         select = (select - 1 + state->choices.size()) % state->choices.size();
+        failsafe += 1;
     } while (state->choices[select].hide);
 
-    state->selection = select;
+    if (failsafe == state->choices.size()) {
+        throw std::runtime_error("All selections in the choice " + state->choices[state->selection].to_state + " are hidden, which will result in a soft-lock... Quitting.");
+    }
+
+    if (select < state->selection) {
+        state->selection = select;
+    }
 }
 
 void StoryGraph::next_selection() {
     size_t select = state->selection;
+
+    size_t failsafe = 0;
     do {
         select = (select + 1) % state->choices.size();
-    } while (state->choices[select].hide);
+        failsafe += 1;
+    } while (state->choices[select].hide && failsafe < state->choices.size());
 
-    state->selection = select;
+    if (failsafe == state->choices.size()) {
+        throw std::runtime_error("All selections in the choice " + state->choices[state->selection].to_state + " are hidden, which will result in a soft-lock... Quitting.");
+    }
+
+    if (select > state->selection) {
+        state->selection = select;
+    }
 }
 
 void StoryGraph::transition() {
@@ -376,22 +389,26 @@ void StoryGraph::transition() {
     for (auto func : state->choices[select].on_select) {
         func();
     }
-    debug_print();
+
+    //debug_nodes();
     state = &nodes[state->choices[select].to_state];
-    if (state->choices[state->selection].hide) next_selection();
-}
+    for (auto &choice : state->choices) {
+        bool show = true;
+        for (auto func : choice.render_conditions) {
+            show = show && func();
+        }
 
-void StoryGraph::debug_print() {
-
-    std::cout << "Variables: " << std::endl;
-    for (auto [var, val] : variables) {
-        std::visit([var](auto &&p) {
-            std::cout << var << " = " << p << std::endl;
-        }, val);
+        choice.hide = !show;
     }
 
-    std::cout << std::endl;
+    if (state->choices[state->selection].hide) {
+        state->selection = 0;
+        next_selection();
+    }
+    //debug_variables();
+}
 
+void StoryGraph::debug_nodes() {
     for (auto [st, node] : nodes) {
         std::cout << node.text << std::endl;
 
@@ -400,5 +417,15 @@ void StoryGraph::debug_print() {
         }
 
         std::cout << std::endl;
+    }
+}
+
+void StoryGraph::debug_variables() {
+    std::cout << std::endl << "---------------------------" << std::endl;
+    std::cout << "Variables: " << std::endl;
+    for (auto [var, val] : variables) {
+        std::visit([var](auto &&p) {
+            std::cout << var << " = " << p << std::endl;
+        }, val);
     }
 }

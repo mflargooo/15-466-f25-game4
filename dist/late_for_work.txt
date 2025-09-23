@@ -1,43 +1,202 @@
 begindef
-int time = 0
-string food=
+int carry = 0
+
+int laundry = 0
+int loaded = 0
+
+int laundry_bed = 0
+int laundry_bath = 0
+
+int trash = 0
+
+int watering_can = 0
+
+int dishes = 0
+
+int bed = 0
+
+int completed = 0
+
+int bed_tasks = 5
+int backyard_tasks = 2
+int greenhouse_tasks = 1
+int kitchen_tasks = 3
+int bath_tasks = 2
 enddef
 
 @init
-%text=hey
-$end
+%text=It is Saturday morning. You need to be out of the house soon, but you pushed back all your chores for today! Finish your chores quickly so you don't miss your obligation!
+$choice=Move to the kitchen.||kitchen
+$choice=Move to the bedroom.||bedroom
+$choice=Move to the backyard.||backyard
 
-@ini
-%text=BZZZP BZZZP... BZZP BZZZP! You're alarm clock jolts you awake. You can't be late three days in a row or you'll be at risk for termination.
-$choice=Get dressed.|show if time = 0; set time 2;|init
-$choice=Get dressed not eq.|show if not time = 0;|init
-$choice=Get dressed g.|show if time > 1; add time 1;|init
-$choice=Get dressed l.|show if time < 1; sub time 2;|init
+
+@living
+%text=You make your way to the living room. You really need to find a better place to put the laundry machine... it sticks out like a sore thumb.
+$choice=Load laundry into the washer.|show if laundry = 1; show if loaded = 0;|washer-1
+$choice=Load laundry into the washer.|show if laundry = 1; show if loaded = 1; sub carry 1;|washer-2
+$choice=Load laundry into the washer.|show if laundry = 2; show if loaded = 0; sub carry 2;|washer-2
+$choice=Can't start the washing machine without all the laundry!|show if laundry = 0; show if loaded > 0; show if loaded < 2;|start-machine-1
+$choice=Start machine.|show if loaded = 2;|start-machine-2
+
+$choice=Move to the kitchen.|show if kitchen_tasks > 0;|kitchen
+$choice=Move to the bedroom.|show if bed_tasks > 0;|bedroom
+$choice=Move to the backyard.|show if backyard_tasks > 0;|backyard
+
+@washer-1
+%text=You put the dirty laundry you are carrying into the washer, but just as you are about to start the load, you remember you still have more laundry somewhere.
+$choice=Back.|add loaded 1; sub laundry 1; sub carry 1;|living
+
+@washer-2
+%text=You load the washer with the dirty laundry. That should be all of it!
+$choice=Back.|set loaded 2; set laundry 0;|living
+
+@start-machine-1
+%text=You need to load the machine with all the dirty laundry first!
+$choice=Back.||living
+
+@start-machine-2
+%text=You start the load of laundry. Good thing you invested in the latest washer-dryer combo machine... No need to worry about wet clothes sitting idle for too long!
+$choice=Back.|set loaded 3; add completed 1; show if completed < 4;|living
+$choice=Back.|set loaded 3; add completed 1; show if completed = 4;|end
+
 
 @kitchen
-%text=You quickly choose an outfit and put it on. You run to the bathroom and brush your teeth... a quick brush is better than nothing. Your stomach grumbles...
-$choice=Make a quick breakfast.|breakfast
-$choice=Stop by a food place on the way out.|food_place
+%text=You walk into the kitchen. It still smells like yesterday's dinner.
+$choice=Wash the dirty dishes.|show if dishes = 1;|wash-dishes
+$choice=Can't pick up trash bag. Both your hands aren't free!|show if trash = 0; show if carry > 0;|trash-1
+$choice=Grab trash bag.|show if trash = 0; show if carry = 0;|trash-2
+$choice=Can't fill the watering can. You may need both hands to hold it.|show if watering_can = 1; show if carry = 2;|fill-kit-1
+$choice=Fill watering can.|show if watering_can = 1; show if carry = 1;|fill-kit-2
 
-@breakfast
-%text=You whip up some eggs in record time. It only took you 10 minutes total to cook and eat! You leave the dishes scattered all over the place.
-$choice=Grab keys and go!|running
+$choice=Move to the living room.|show if completed < 5;|living
+$choice=Move to the living room.|show if completed = 5;|end
 
-@food_place
-%text=You run out of the house and towards the station. You make it to the donut shop that is around the corner of the house. Hmm... everything seems soo good!
-$choice=Buy a glazed donut.|set food donut;|running
-$choice=Buy a jelly-filled donut.|set food donut;|running
-$choice=Buy an avocado toast.|set food toast;|running
+@wash-dishes
+%text=You wash all the dirty dishes you brought from the bedroom. Another chore completed!
+$choice=Back.|set dishes 2; sub carry 1; add completed 1; sub kitchen_tasks 1;|kitchen
 
-@running
-%text=You take a look at your watch as you are running out the door. If you keep up at the pace you are going, you might just have enough time to slip on board the next train! You usually take the longer route from here through the local park, but you may spare a few minutes if you take that one shortcut.
-$choice=Run through the park.|park
-$choice=Take the shortcut.|shortcut
+@trash-1
+%text=The trash is overflowing. You'll need both hands to carry the bag without it ripping. You should do something with the items you are currently carrying first..
+$choice=Back.||kitchen
 
-@park
-%text=You decide to head to the station through the path you know. You waste no time to reach the station and you watch as the train pulls in
-$end
+@trash-2
+%text=You pick up the trash. It reeks! You should take it out quickly before you get a headache from the smell. Maybe you should have taken it out earlier in the week.
+$choice=Back.|set trash 1; set carry 2; sub kitchen_tasks 1;|kitchen
 
-@shortcut
-%text=You decide to take the shortcut today instead of the usual path. You bolt down the path, and round the final corner.. There stands a pack of stray dogs in font of you, and they seem super angry.
+@fill-kit-1
+%text=Maybe you should finish with the other items you are carrying first. The watering can may be too heavy to hold with just one hand when it is full of water.
+$choice=Back.||kitchen
+
+@fill-kit-2
+%text=You fill up the watering can with the tap. Your inkling that the filled watering can would require both hands to hold was correct.
+$choice=Back.|set watering_can 2; set carry 2; sub kitchen_tasks 1; sub bath_tasks 1; sub bed_tasks 1;|kitchen
+
+
+@backyard
+%text=You exit the house into the backyard. You've done a good job in maintaining the space, but maybe you should find a new place to put the trash cans... they kind of ruin the vibe.
+$choice=Take out the trash.|show if trash = 1;|take-out-trash
+
+$choice=Move to the living room.|show if completed < 5;|living
+$choice=Move to the living room.|show if completed = 5;|end
+$choice=Move to the greenhouse.|show if greenhouse_tasks > 0;|greenhouse
+
+@take-out-trash
+%text=You hold your breath, and swiftly open the lid, lug the trash bag over your shoulder, and close the lid. You're glad to be done with this chore!
+$choice=Back.|set trash 2; set carry 0; add completed 1; sub backyard_tasks 1;|backyard
+
+
+@greenhouse
+%text=You walk into the greenhouse. It's very warm inside, as you would expect. The plants inside seem to be growing very well! But they do seem a little thirsty at the moment.
+
+$choice=Can't pick up watering can. Hands are full!|show if watering_can = 0; show if carry = 2;|watering-can-1
+$choice=Grab watering can.|show if watering_can = 0; show if carry < 2;|watering-can-2
+$choice=Water plants.|show if watering_can = 1;|watering-can-3
+$choice=Water plants.|show if watering_can = 2;|watering-can-4
+
+$choice=Move to the backyard.||backyard
+
+@watering-can-1
+%text=You can't pick up the watering can now, you're carrying too much at the moment!
+$choice=Back.||greenhouse
+
+@watering-can-2
+%text=You pick up the watering can. It's very light!
+$choice=Back.|set watering_can 1; add carry 1;|greenhouse
+
+@watering-can-3
+%text=You tilt the watering can to water the plants.. Silly you! There's no water in the can. No wonder why it was so light!
+$choice=Back.||greenhouse
+
+@watering-can-4
+%text=You water the plants in the greenhouse. They look even better than before! Another chore down!
+$choice=Back.|set watering_can 4; set carry 0; add completed 1; sub greenhouse_tasks 1; sub backyard_tasks 1;|greenhouse
+
+
+@bedroom
+%text=You enter the bedroom. The bed looks tempting...
+$choice=Can't make the bed. You'll need empty hands to do so!|show if bed = 0; show if carry > 0;|bed-1
+$choice=Make the bed.|show if bed = 0; show if carry = 0;|bed-2
+$choice=Can't pick up dishes. Hands are full!|show if dishes = 0; show if carry = 2;|dishes-1
+$choice=Grab the dishes.|show if dishes = 0; show if carry < 2;|dishes-2
+$choice=Can't pick up the dirty laundry. Hands are full!|show if laundry_bed = 0; show if carry = 2;|laundry-bed-1
+$choice=Grab the dirty laundry.|show if laundry_bed = 0; show if carry < 2;|laundry-bed-2
+
+$choice=Move to the living room.|show if completed < 5;|living
+$choice=Move to the living room.|show if completed = 5;|end
+$choice=Move to the bathroom.|show if bath_tasks > 0;|bathroom
+
+@bed-1
+%text=You can't make the bed with items in your hand!
+$choice=Back.||bedroom
+
+@bed-2
+%text=You make the bed... simple, but arguably the worst chore. 
+$choice=Back.|set bed 1; add completed 1; sub bed_tasks 1;|bedroom
+
+@dishes-1
+%text=Both your hands are occupied currently. Finish what you planned to do with the current items first!
+$choice=Back.||bedroom
+
+@dishes-2
+%text=You pick up the dishes that have been sitting in your room all week. You carry them all in one hand, since you have great balancing skills.
+$choice=Back.|set dishes 1; add carry 1; sub bed_tasks 1;|bedroom
+
+@laundry-bed-1
+%text=Your hands are full. Come back for the dirty laundry when you've finished with the other items you are carrying.
+$choice=Back.||bedroom
+
+@laundry-bed-2
+%text=You picked up the clothes that were on the ground. You don't remember which pieces are dirty and which were just laying around since the last time you did laundry.. You take all of them and make a full load.
+$choice=Back.|set laundry_bed 1; add laundry 1; add carry 1; sub bed_tasks 1;|bedroom
+
+
+@bathroom
+%text=You enter the bathroom. It still smells nice from the candle that you lit last night.
+$choice=Can't pick up the dirty laundry. Hands are full!|show if laundry_bath = 0; show if carry = 2;|laundry-bath-1
+$choice=Grab the dirty laundry.|show if laundry_bath = 0; show if carry < 2;|laundry-bath-2
+$choice=Can't fill the watering can. You may need both hands to hold it.|show if watering_can = 1; show if carry = 2;|fill-bath-1
+$choice=Fill watering can.|show if watering_can = 1; show if carry = 1;|fill-bath-2
+
+$choice=Move to the bedroom.||bedroom
+
+@laundry-bath-1
+%text=Your hands are full. Come back for the dirty laundry when you've finished with the other items you are carrying.
+$choice=Back.||bathroom
+
+@laundry-bath-2
+%text=You picked up the dirty laundry. It is only a little bit, but it should make a full load with the rest of it.
+$choice=Back.|set laundry_bath 1; add laundry 1; add carry 1; sub bath_tasks 1; sub bed_tasks 1;|bathroom
+
+@fill-bath-1
+%text=Maybe you should finish with the other items you are carrying first. The watering can may be too heavy to hold with just one hand when it is full of water.
+$choice=Back.||bathroom
+
+@fill-bath-2
+%text=You fill up the watering can with the tap. Your inkling that the filled watering can would require both hands to hold was correct.
+$choice=Back.|set watering_can 2; set carry 2; sub bath_tasks 1; sub bed_tasks 1; sub kitchen_tasks 1;|bathroom
+
+
+@end
+%text=All the chores are complete! Time to head out!
 $end
