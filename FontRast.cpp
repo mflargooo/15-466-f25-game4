@@ -128,7 +128,8 @@ void FontRast::register_alphabet_to_texture(const char *alphabet, int len, GLsiz
 
 GlyphTexInfo FontRast::lookup(const char chr) {
     if (lookup_tex.find(chr) == lookup_tex.end()) {
-        std::cout << std::format("Character {} has not been registered to the texture.", chr) << std::endl;
+        // std::cout << std::format("Character {} has not been registered to the texture.", chr) << std::endl;
+        return GlyphTexInfo();
     }
 
     return lookup_tex[chr];
@@ -263,7 +264,7 @@ void FontRast::raster_text(const char *str, size_t len, glm::u8vec3 color, glm::
     GL_ERRORS();
 
     local_at.x = at.x;
-    local_at.y += ft_face->height / 64.f * line_spacing * 1.2f;
+    local_at.y += ft_face->height / 64.f * line_spacing;
 
     at = local_at;
 }

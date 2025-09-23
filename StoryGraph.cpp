@@ -321,12 +321,12 @@ void StoryGraph::init(const char *filename) {
 
 void StoryGraph::render_scene(FontRast &rasterizer, glm::vec2 &anchor) {
     glm::vec2 local = anchor;
-    rasterizer.raster_text(state->text.data(), state->text_length, glm::u8vec3(0), local);
+    rasterizer.raster_text(state->text.data(), state->text_length, glm::u8vec3(188, 204, 200), local);
 
     // reposition anchor for choices
-    local.x = anchor.x + 50.f; //50 pixel indent
+    local.x = anchor.x + 65.f; 
     local.y += + 20.f;
-    
+
     for (size_t i = 0; i < state->choices.size(); i++) {
         auto &p = state->choices[i];
         bool render = true;
@@ -338,9 +338,13 @@ void StoryGraph::render_scene(FontRast &rasterizer, glm::vec2 &anchor) {
         }
         
         if (render) {
-            rasterizer.raster_text(p.text.data(), p.text.length(), i == state->selection ? glm::u8vec3(255, 255, 0) : glm::u8vec3(0), local);
+            if (i == state->selection) {
+                glm::vec2 tmp = local;
+                tmp.x -= 38.75f;
+                rasterizer.raster_text(">", 2, glm::u8vec3(238, 250, 0), tmp);
+            }
+            rasterizer.raster_text(p.text.data(), p.text.length(), i == state->selection ? glm::u8vec3(238, 250, 0) : glm::u8vec3(188, 204, 200), local);
         }
-
         p.hide = !render;
     }
 
@@ -354,9 +358,9 @@ void StoryGraph::prev_selection() {
     do {
         select = (select - 1 + state->choices.size()) % state->choices.size();
         failsafe += 1;
-    } while (state->choices[select].hide);
+    } while (state->choices[select].hide && failsafe <= state->choices.size());
 
-    if (failsafe == state->choices.size()) {
+    if (failsafe > state->choices.size()) {
         throw std::runtime_error("All selections in the choice " + state->choices[state->selection].to_state + " are hidden, which will result in a soft-lock... Quitting.");
     }
 
@@ -372,9 +376,9 @@ void StoryGraph::next_selection() {
     do {
         select = (select + 1) % state->choices.size();
         failsafe += 1;
-    } while (state->choices[select].hide && failsafe < state->choices.size());
+    } while (state->choices[select].hide && failsafe <= state->choices.size());
 
-    if (failsafe == state->choices.size()) {
+    if (failsafe > state->choices.size()) {
         throw std::runtime_error("All selections in the choice " + state->choices[state->selection].to_state + " are hidden, which will result in a soft-lock... Quitting.");
     }
 
@@ -385,6 +389,11 @@ void StoryGraph::next_selection() {
 
 void StoryGraph::transition() {
     size_t select = state->selection;
+
+    /* unqiue for this story */
+    if (state == &nodes["init"]) {
+        nodes["living"].selection = select;
+    }
 
     for (auto func : state->choices[select].on_select) {
         func();

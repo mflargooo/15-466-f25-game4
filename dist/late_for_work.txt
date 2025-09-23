@@ -33,6 +33,7 @@ $choice=Move to the backyard.||backyard
 
 @living
 %text=You make your way to the living room. You really need to find a better place to put the laundry machine... it sticks out like a sore thumb.
+
 $choice=Load laundry into the washer.|show if laundry = 1; show if loaded = 0;|washer-1
 $choice=Load laundry into the washer.|show if laundry = 1; show if loaded = 1; sub carry 1;|washer-2
 $choice=Load laundry into the washer.|show if laundry = 2; show if loaded = 0; sub carry 2;|washer-2
@@ -63,6 +64,7 @@ $choice=Back.|set loaded 3; add completed 1; show if completed = 4;|end
 
 @kitchen
 %text=You walk into the kitchen. It still smells like yesterday's dinner.
+
 $choice=Wash the dirty dishes.|show if dishes = 1;|wash-dishes
 $choice=Can't pick up trash bag. Both your hands aren't free!|show if trash = 0; show if carry > 0;|trash-1
 $choice=Grab trash bag.|show if trash = 0; show if carry = 0;|trash-2
@@ -116,6 +118,7 @@ $choice=Water plants.|show if watering_can = 2;|watering-can-4
 
 $choice=Move to the backyard.||backyard
 
+
 @watering-can-1
 %text=You can't pick up the watering can now, you're carrying too much at the moment!
 $choice=Back.||greenhouse
@@ -135,6 +138,7 @@ $choice=Back.|set watering_can 4; set carry 0; add completed 1; sub greenhouse_t
 
 @bedroom
 %text=You enter the bedroom. The bed looks tempting...
+
 $choice=Can't make the bed. You'll need empty hands to do so!|show if bed = 0; show if carry > 0;|bed-1
 $choice=Make the bed.|show if bed = 0; show if carry = 0;|bed-2
 $choice=Can't pick up dishes. Hands are full!|show if dishes = 0; show if carry = 2;|dishes-1
@@ -173,6 +177,7 @@ $choice=Back.|set laundry_bed 1; add laundry 1; add carry 1; sub bed_tasks 1;|be
 
 @bathroom
 %text=You enter the bathroom. It still smells nice from the candle that you lit last night.
+
 $choice=Can't pick up the dirty laundry. Hands are full!|show if laundry_bath = 0; show if carry = 2;|laundry-bath-1
 $choice=Grab the dirty laundry.|show if laundry_bath = 0; show if carry < 2;|laundry-bath-2
 $choice=Can't fill the watering can. You may need both hands to hold it.|show if watering_can = 1; show if carry = 2;|fill-bath-1
