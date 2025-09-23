@@ -126,13 +126,13 @@ void FontRast::register_alphabet_to_texture(const char *alphabet, int len, GLsiz
     GL_ERRORS();
 }
 
-GlyphTexInfo FontRast::lookup(const char chr) {
+GlyphTexInfo *FontRast::lookup(const char chr) {
     if (lookup_tex.find(chr) == lookup_tex.end()) {
         // std::cout << std::format("Character {} has not been registered to the texture.", chr) << std::endl;
-        return GlyphTexInfo();
+        return nullptr;
     }
 
-    return lookup_tex[chr];
+    return &lookup_tex[chr];
 }
 
 void FontRast::raster_word(const char *word, size_t len, hb_glyph_position_t *pos, glm::vec2 &at, float left_margin) {
@@ -153,32 +153,34 @@ void FontRast::raster_word(const char *word, size_t len, hb_glyph_position_t *po
 
         // if time allows, make this computation ones per graph transition
     for (size_t i = 0; i < len; i++) {        
-        GlyphTexInfo glyph = lookup(word[i]);
+        GlyphTexInfo *glyph = lookup(word[i]);
 
-        float pen_x = at_x + (float)(pos[i].x_offset / 64.f) + (float)glyph.left;
-        float pen_y = at_y - (float)(pos[i].y_offset / 64.f) - (float)glyph.top;
+        if (!glyph) break; //skip glyphs with no registered information
+
+        float pen_x = at_x + (float)(pos[i].x_offset / 64.f) + (float)glyph->left;
+        float pen_y = at_y - (float)(pos[i].y_offset / 64.f) - (float)glyph->top;
 
         Vertex vertices[6];
 
         // top-left triangle
         vertices[0].Position = glm::vec2(pen_x, pen_y);
-        vertices[0].TexCoord = glm::vec2(glyph.u0, glyph.v0);
+        vertices[0].TexCoord = glm::vec2(glyph->u0, glyph->v0);
 
-        vertices[1].Position = glm::vec2(pen_x + glyph.width, pen_y);
-        vertices[1].TexCoord = glm::vec2(glyph.u1, glyph.v0);
+        vertices[1].Position = glm::vec2(pen_x + glyph->width, pen_y);
+        vertices[1].TexCoord = glm::vec2(glyph->u1, glyph->v0);
 
-        vertices[2].Position = glm::vec2(pen_x, pen_y + glyph.rows);
-        vertices[2].TexCoord = glm::vec2(glyph.u0, glyph.v1);
+        vertices[2].Position = glm::vec2(pen_x, pen_y + glyph->rows);
+        vertices[2].TexCoord = glm::vec2(glyph->u0, glyph->v1);
 
         // bottom-right triangle
-        vertices[3].Position = glm::vec2(pen_x + glyph.width, pen_y);
-        vertices[3].TexCoord = glm::vec2(glyph.u1, glyph.v0);
+        vertices[3].Position = glm::vec2(pen_x + glyph->width, pen_y);
+        vertices[3].TexCoord = glm::vec2(glyph->u1, glyph->v0);
 
-        vertices[4].Position = glm::vec2(pen_x, pen_y + glyph.rows);
-        vertices[4].TexCoord = glm::vec2(glyph.u0, glyph.v1);
+        vertices[4].Position = glm::vec2(pen_x, pen_y + glyph->rows);
+        vertices[4].TexCoord = glm::vec2(glyph->u0, glyph->v1);
 
-        vertices[5].Position = glm::vec2(pen_x + glyph.width, pen_y + glyph.rows);
-        vertices[5].TexCoord = glm::vec2(glyph.u1, glyph.v1);
+        vertices[5].Position = glm::vec2(pen_x + glyph->width, pen_y + glyph->rows);
+        vertices[5].TexCoord = glm::vec2(glyph->u1, glyph->v1);
 
         glBindBuffer(GL_ARRAY_BUFFER, vbo);
         glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertices), vertices);

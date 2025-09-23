@@ -37,7 +37,7 @@ struct FontRast {
     GLuint texture;
     void set_line_spacing(const float line_spacing);
     void register_alphabet_to_texture(const char *alphabet, int len, GLsizei texture_size);
-    GlyphTexInfo lookup(const char chr);
+    GlyphTexInfo *lookup(const char chr);
     void raster_text(const char *str, size_t len, glm::u8vec3 color, glm::vec2 &at);
 
     FontRast(std::string fontfile, unsigned int pixel_height);
